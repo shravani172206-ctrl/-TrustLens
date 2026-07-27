@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Mail, Lock, Loader2 } from 'lucide-react'
+
+import { login, saveToken } from '@/lib/auth'
 import { AuthShell } from '@/components/auth/auth-shell'
 import { TextField } from '@/components/ui/text-field'
 import { Btn } from '@/components/ui/btn'
@@ -12,16 +14,42 @@ export default function LoginPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
-    setTimeout(() => router.push('/dashboard'), 900)
+
+    const formData = new FormData(e.currentTarget)
+
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+
+    try {
+      // Uncomment this when your FastAPI backend is ready
+      // const response = await login({ email, password })
+
+      // Temporary response for frontend testing
+      const response = {
+        token: 'dummy-jwt-token',
+      }
+
+      saveToken(response.token)
+
+      router.push('/dashboard')
+    } catch (error) {
+      console.error(error)
+      alert('Login failed.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <AuthShell>
       <div className="mt-10">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Welcome back</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Welcome back
+        </h1>
+
         <p className="mt-2 text-sm text-muted-foreground">
           Log in to continue analyzing products with TrustLens.
         </p>
@@ -30,14 +58,17 @@ export default function LoginPage() {
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <TextField
           label="Email"
+          name="email"
           type="email"
           placeholder="sarah@example.com"
           icon={<Mail />}
           defaultValue="sarah@example.com"
           required
         />
+
         <TextField
           label="Password"
+          name="password"
           type="password"
           placeholder="Enter your password"
           icon={<Lock />}
@@ -47,9 +78,14 @@ export default function LoginPage() {
 
         <div className="flex items-center justify-between text-sm">
           <label className="flex items-center gap-2 text-muted-foreground">
-            <input type="checkbox" className="size-4 rounded border-border accent-primary" defaultChecked />
+            <input
+              type="checkbox"
+              className="size-4 rounded border-border accent-primary"
+              defaultChecked
+            />
             Remember me
           </label>
+
           <a href="#" className="font-medium text-primary hover:underline">
             Forgot password?
           </a>
