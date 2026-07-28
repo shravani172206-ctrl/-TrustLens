@@ -1,22 +1,30 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { PageHeader } from '@/components/app/page-header'
 import { Uploader } from '@/components/analyze/uploader'
 import { Pipeline } from '@/components/analyze/pipeline'
-import { trustReports } from '@/lib/mock-data'
 import { Sparkles } from 'lucide-react'
+import { analyzeProduct } from '@/lib/analyze-service'
+
+import { trustReports } from '@/lib/mock-data'
+import { isAuthenticated } from '@/lib/auth-guard'
 
 export default function AnalyzePage() {
   const router = useRouter()
   const [phase, setPhase] = useState<'input' | 'processing'>('input')
 
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.replace('/login')
+    }
+  }, [router])
+
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader
-        eyebrow="New analysis"
         title="Analyze a product"
         description="Upload a label or packaging photo and let TrustLens extract, verify, and score every claim."
       />
@@ -29,13 +37,28 @@ export default function AnalyzePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
           >
-            <Uploader onAnalyze={() => setPhase('processing')} />
+            <Uploader
+  onAnalyze={async (data) => {
+    try {
+      const response = await analyzeProduct(data)
+
+      if (response.success) {
+        setPhase('processing')
+      }
+    } catch (error) {
+      console.error(error)
+      alert('Failed to analyze product')
+    }
+  }}
+/>
 
             <div className="mt-6 flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4">
               <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
+
               <p className="text-xs leading-relaxed text-muted-foreground">
-                TrustLens never guesses. Every score is traced back to a verifiable source in the
-                knowledge base, and flagged ingredients link to the regulatory reasoning behind them.
+                TrustLens never guesses. Every score is traced back to a
+                verifiable source in the knowledge base, and flagged ingredients
+                link to the regulatory reasoning behind them.
               </p>
             </div>
           </motion.div>
@@ -46,7 +69,11 @@ export default function AnalyzePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
           >
-            <Pipeline onComplete={() => router.push(`/report/${trustReports[0].id}`)} />
+            <Pipeline
+              onComplete={() =>
+                router.push(`/report/${trustReports[0].id}`)
+              }
+            />
           </motion.div>
         )}
       </AnimatePresence>

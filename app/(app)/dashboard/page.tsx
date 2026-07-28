@@ -1,17 +1,49 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ScanLine, Star, Bookmark, ShieldAlert, ArrowRight } from 'lucide-react'
+
 import { PageHeader } from '@/components/app/page-header'
 import { StatCard } from '@/components/app/stat-card'
 import { TrendChart } from '@/components/app/trend-chart'
 import { ReportRow } from '@/components/app/report-row'
 import { Reveal } from '@/components/reveal'
 import { BtnLink } from '@/components/ui/btn'
-import { dashboardStats, categoryBreakdown, trustReports } from '@/lib/mock-data'
+
+import { getDashboardData } from '@/lib/report-service'
+import { isAuthenticated } from '@/lib/auth-guard'
 
 export default function DashboardPage() {
-  const maxCategory = Math.max(...categoryBreakdown.map((c) => c.count))
+  const router = useRouter()
+
+  const [dashboard, setDashboard] = useState<{
+    stats: any
+    categories: any[]
+    reports: any[]
+  } | null>(null)
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.replace('/login')
+      return
+    }
+
+    async function loadDashboard() {
+      const data = await getDashboardData()
+      setDashboard(data)
+    }
+
+    loadDashboard()
+  }, [router])
+
+  if (!dashboard) {
+    return <div className="p-6">Loading...</div>
+  }
+
+  const { stats, categories, reports } = dashboard
+  const maxCategory = Math.max(...categories.map((c) => c.count))
 
   return (
     <div className="space-y-8">
@@ -29,32 +61,35 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Products Analyzed"
-          value={dashboardStats.productsAnalyzed}
+          value={stats.productsAnalyzed}
           icon={ScanLine}
           delta={12}
           tone="primary"
           delay={0}
         />
+
         <StatCard
           label="Average Trust Score"
-          value={dashboardStats.averageTrustScore}
+          value={stats.averageTrustScore}
           suffix="%"
           icon={Star}
           delta={4}
           tone="secondary"
           delay={0.08}
         />
+
         <StatCard
           label="Reports Saved"
-          value={dashboardStats.reportsSaved}
+          value={stats.reportsSaved}
           icon={Bookmark}
           delta={8}
           tone="accent"
           delay={0.16}
         />
+
         <StatCard
           label="Allergens Flagged"
-          value={dashboardStats.allergensFlagged}
+          value={stats.allergensFlagged}
           icon={ShieldAlert}
           delta={-3}
           tone="warning"
@@ -70,6 +105,7 @@ export default function DashboardPage() {
                 <h2 className="font-semibold text-foreground">
                   Trust Score Trend
                 </h2>
+
                 <p className="text-sm text-muted-foreground">
                   Average score over the last 6 months
                 </p>
@@ -97,7 +133,7 @@ export default function DashboardPage() {
             </p>
 
             <div className="mt-6 space-y-4">
-              {categoryBreakdown.map((c) => (
+              {categories.map((c) => (
                 <div key={c.category}>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-foreground">{c.category}</span>
@@ -145,7 +181,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-4 space-y-1">
-            {trustReports.map((r) => (
+            {reports.map((r) => (
               <ReportRow key={r.id} report={r} />
             ))}
           </div>

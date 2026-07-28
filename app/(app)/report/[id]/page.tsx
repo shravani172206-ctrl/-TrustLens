@@ -1,11 +1,19 @@
 'use client'
 
-import { use } from 'react'
+import { use, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { motion } from 'motion/react'
-import { ArrowLeft, Download, Share2, Bookmark, CheckCircle2, Calendar } from 'lucide-react'
+import {
+  ArrowLeft,
+  Download,
+  Share2,
+  Bookmark,
+  CheckCircle2,
+  Calendar,
+} from 'lucide-react'
+
 import { CircularScore } from '@/components/circular-score'
 import { Btn } from '@/components/ui/btn'
 import {
@@ -14,11 +22,33 @@ import {
   ClaimsList,
   SafetyFlags,
 } from '@/components/report/report-sections'
-import { getReport, scoreLabel } from '@/lib/mock-data'
 
-export default function ReportPage({ params }: { params: Promise<{ id: string }> }) {
+import { getReportById } from '@/lib/report-service'
+import { scoreLabel } from '@/lib/mock-data'
+
+export default function ReportPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
   const { id } = use(params)
-  const report = getReport(id)
+
+  const [report, setReport] = useState<any | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadReport() {
+      const data = await getReportById(id)
+      setReport(data)
+      setLoading(false)
+    }
+
+    loadReport()
+  }, [id])
+
+  if (loading) {
+    return <div className="p-6">Loading...</div>
+  }
 
   if (!report) notFound()
 
@@ -32,7 +62,6 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         Back to reports
       </Link>
 
-      {/* Hero card */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -42,31 +71,50 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <div className="relative size-24 shrink-0 overflow-hidden rounded-2xl border border-border bg-muted">
-              <Image src={report.image || '/placeholder.svg'} alt={report.productName} fill className="object-cover" sizes="96px" />
+              <Image
+                src={report.image || '/placeholder.svg'}
+                alt={report.productName}
+                fill
+                className="object-cover"
+                sizes="96px"
+              />
             </div>
+
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                   {report.category}
                 </span>
+
                 <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                   <Calendar className="size-3" />
-                  {new Date(report.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {new Date(report.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
                 </span>
               </div>
+
               <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground text-balance">
                 {report.productName}
               </h1>
-              <p className="text-sm text-muted-foreground">{report.brand}</p>
+
+              <p className="text-sm text-muted-foreground">
+                {report.brand}
+              </p>
+
               <div className="mt-4 flex flex-wrap gap-2">
                 <Btn size="sm" variant="outline">
                   <Bookmark className="size-4" />
                   Save
                 </Btn>
+
                 <Btn size="sm" variant="outline">
                   <Share2 className="size-4" />
                   Share
                 </Btn>
+
                 <Btn size="sm" variant="outline">
                   <Download className="size-4" />
                   Export PDF
@@ -83,22 +131,31 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         <div className="border-t border-border bg-muted/40 px-6 py-5 sm:px-8">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" />
+
             <div>
               <p className="text-sm font-semibold text-foreground">
                 AI Verdict: {scoreLabel(report.trustScore)}
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{report.summary}</p>
+
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                {report.summary}
+              </p>
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Key reasons */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <SectionCard title="Why this score" description="Key factors behind the trust rating">
+        <SectionCard
+          title="Why this score"
+          description="Key factors behind the trust rating"
+        >
           <ul className="space-y-3">
-            {report.reasons.map((reason) => (
-              <li key={reason} className="flex items-start gap-2.5 text-sm text-foreground">
+            {report.reasons.map((reason: string) => (
+              <li
+                key={reason}
+                className="flex items-start gap-2.5 text-sm text-foreground"
+              >
                 <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
                 {reason}
               </li>
@@ -106,12 +163,14 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           </ul>
         </SectionCard>
 
-        <SectionCard title="Safety & suitability" description="Who should take extra care">
+        <SectionCard
+          title="Safety & suitability"
+          description="Who should take extra care"
+        >
           <SafetyFlags report={report} />
         </SectionCard>
       </div>
 
-      {/* Ingredients */}
       <SectionCard
         title="Ingredient breakdown"
         description="Each ingredient analyzed for purpose and risk"
@@ -120,7 +179,6 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         <IngredientTable ingredients={report.ingredients} />
       </SectionCard>
 
-      {/* Claims */}
       <SectionCard
         title="Marketing claim verification"
         description="How the product's claims hold up against evidence"
@@ -130,7 +188,8 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       </SectionCard>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">
-        This report is generated by AI for informational purposes and is not a substitute for professional medical advice.
+        This report is generated by AI for informational purposes and is not a
+        substitute for professional medical advice.
       </p>
     </div>
   )
