@@ -1,0 +1,23 @@
+# Python environments
+**/.venv/
+**/venv/
+**/venv_linux/
+int_venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# IDE
+.idea/
+
+# Large ML model files
+divya/trustlens-ai-api/models/layoutlmv3_ingredient/*.safetensors
+divya/trustlens-ai-api/models/layoutlmv3_ingredient/checkpoint-*/
+
+# Training artifacts
+divya/trustlens-ai-api/models/layoutlmv3_ingredient/training_args.bin
+
+# Local environment/secrets
+.env
+.env.*
